@@ -8,8 +8,8 @@ from bs4 import BeautifulSoup
 
 # --- CONFIGURACIÓN DE TELEGRAM ---
 # Guarda estos valores en st.secrets o en variables de entorno para producción
-TELEGRAM_BOT_TOKEN = "TU_BOT_TOKEN_AQUI"
-TELEGRAM_CHAT_ID = "TU_CHAT_ID_AQUI"
+TELEGRAM_BOT_TOKEN = "8923959866:AAES1dc4LAsedUKUsGR4p5D1SkaMt7nKyes"
+TELEGRAM_CHAT_ID = "7272170952"
 
 def enviar_alerta_telegram(mensaje: str):
     """Envía un mensaje formateado a Telegram mediante la API HTTP."""
