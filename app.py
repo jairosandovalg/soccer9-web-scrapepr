@@ -144,7 +144,7 @@ if st.button("🔄 Ejecutar Escaneo Completo"):
                     a_team = p_div.find("div", class_=lambda c: c and "away" in c.lower() and "participant" in c.lower())
                     nombre_partido = f"{h_team.get_text(strip=True) if h_team else 'Local'} vs {a_team.get_text(strip=True) if a_team else 'Visitante'}"
                     
-                    url = f"https://www.flashscore.pe/partido/{id_p}/#/resumen/estadisticas"
+                    url = f"https://www.flashscore.pe/partido/{id_p}/#/summary/stats"
                     data = extraer_estadisticas_partido(context, url)
                     
                     stats_dict = data.pop("Stats", {})
