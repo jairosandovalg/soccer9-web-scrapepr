@@ -94,7 +94,7 @@ def extraer_estadisticas_partido(playwright_context, url_partido):
         if len(valores) >= 3:
             datos_partido["Cuotas"] = f"1:{valores[0]} X:{valores[1]} 2:{valores[2]}"
 
-        selector_boton = "//button[@role='tab' and contains(., 'Estadísticas')]"
+        selector_boton = "//button[@role='tab' and contains(., 'Stats')]"
         if page.locator(selector_boton).count() > 0:
             page.locator(selector_boton).first.click(force=True)
             page.wait_for_timeout(1000)
