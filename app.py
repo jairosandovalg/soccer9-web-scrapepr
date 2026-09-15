@@ -69,46 +69,64 @@ def extraer_estadisticas_partido(playwright_context, url_partido):
         page.goto(url_partido, timeout=25000, wait_until="domcontentloaded")
         page.wait_for_selector("div.detailScore__wrapper", timeout=10000)
         
+        # Extracción de Cuotas (si existen)
         try:
-            page.wait_for_selector("button[data-analytics-bookmaker-id='660']", timeout=5000)
-            page.wait_for_timeout(1500)
-        except: pass 
+            page.wait_for_selector("button[data-analytics-bookmaker-id='660']", timeout=3000)
+        except:
+            pass 
 
         soup = BeautifulSoup(page.content(), "html.parser")
         
         score = soup.select_one("div.detailScore__wrapper")
-        if score: datos_partido["Marcador"] = score.get_text(strip=True)
+        if score:
+            datos_partido["Marcador"] = score.get_text(strip=True)
         
         status = soup.select_one("span.fixedHeaderDuel__detailStatus")
-        if status: datos_partido["Tiempo/Estado"] = status.get_text(strip=True)
+        if status:
+            datos_partido["Tiempo/Estado"] = status.get_text(strip=True)
         
         minuto = soup.select_one("span.eventTime")
-        if minuto: datos_partido["Minuto"] = minuto.get_text(strip=True)
+        if minuto:
+            datos_partido["Minuto"] = minuto.get_text(strip=True)
 
         botones = soup.find_all("button", {"data-analytics-bookmaker-id": "660"})
         valores = []
         for btn in botones:
             span = btn.find("span", {"data-testid": "wcl-oddsValue"})
-            if span: valores.append(span.get_text(strip=True))
+            if span:
+                valores.append(span.get_text(strip=True))
         
         if len(valores) >= 3:
             datos_partido["Cuotas"] = f"1:{valores[0]} X:{valores[1]} 2:{valores[2]}"
 
-        selector_boton = "//button[@role='tab' and contains(., 'Stats')]"
-        if page.locator(selector_boton).count() > 0:
-            page.locator(selector_boton).first.click(force=True)
-            page.wait_for_timeout(1000)
-            soup_s = BeautifulSoup(page.content(), "html.parser")
-            for fila in soup_s.find_all("div", {"data-testid": "wcl-statistics"}):
-                cat = fila.find("div", {"data-testid": "wcl-statistics-category"})
-                if cat:
-                    h = fila.find("div", class_=lambda x: x and 'wcl-homeValue' in x)
-                    v = fila.find("div", class_=lambda x: x and 'wcl-awayValue' in x)
-                    datos_partido["Stats"][f"{cat.get_text(strip=True)} (L)"] = h.get_text(strip=True) if h else "0"
-                    datos_partido["Stats"][f"{cat.get_text(strip=True)} (V)"] = v.get_text(strip=True) if v else "0"
-    except: pass
+        # --- SELECCIÓN Y CLIC EN LA PESTAÑA DE ESTADÍSTICAS ---
+        # Selector robusto usando atributos fijos en vez de texto o etiqueta rígida
+        tab_selector = "*[data-analytics-alias='match-statistics'], a[href*='estadisticas'], a[href*='stats']"
+        
+        tab_element = page.locator(tab_selector).first
+        if tab_element.is_visible(timeout=3000):
+            tab_element.click(force=True)
+            # Esperar a que el contenedor de filas de estadísticas aparezca
+            page.wait_for_selector("div[data-testid='wcl-statistics']", timeout=5000)
+        
+        # Parsear las filas de estadísticas
+        soup_s = BeautifulSoup(page.content(), "html.parser")
+        filas = soup_s.find_all("div", {"data-testid": "wcl-statistics"})
+        
+        for fila in filas:
+            cat = fila.find("div", {"data-testid": "wcl-statistics-category"})
+            if cat:
+                cat_nombre = cat.get_text(strip=True)
+                h = fila.find("div", class_=lambda x: x and 'wcl-homeValue' in x)
+                v = fila.find("div", class_=lambda x: x and 'wcl-awayValue' in x)
+                datos_partido["Stats"][f"{cat_nombre} (L)"] = h.get_text(strip=True) if h else "0"
+                datos_partido["Stats"][f"{cat_nombre} (V)"] = v.get_text(strip=True) if v else "0"
+
+    except Exception as e:
+        print(f"Error procesando estadísticas de {url_partido}: {e}")
     finally:
-        if page: page.close()
+        if page:
+            page.close()
     return datos_partido
 
 # --- INTERFAZ ---
@@ -144,7 +162,7 @@ if st.button("🔄 Ejecutar Escaneo Completo"):
                     a_team = p_div.find("div", class_=lambda c: c and "away" in c.lower() and "participant" in c.lower())
                     nombre_partido = f"{h_team.get_text(strip=True) if h_team else 'Local'} vs {a_team.get_text(strip=True) if a_team else 'Visitante'}"
                     
-                    url = f"https://www.flashscore.pe/partido/{id_p}/#/summary/stats"
+                    url = f"https://www.flashscore.pe/partido/{id_p}/#/resumen/estadisticas"
                     data = extraer_estadisticas_partido(context, url)
                     
                     stats_dict = data.pop("Stats", {})
